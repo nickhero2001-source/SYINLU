@@ -1435,25 +1435,34 @@ footer {
   justify-content: center;
   backdrop-filter: blur(3px); /* 背景模糊增加質感 */
 }
-
 .modal-content {
   background: #fff;
-  /* 1. 縮小寬度：從 90% 改為 85%，在手機上看起來更精緻 */
-  width: 85%; 
-  max-width: 400px; /* 電腦版也同步縮小一點 */
+  /* 使用 !important 強制寬度縮小到 80% */
+  width: 80% !important; 
+  max-width: 380px !important; 
+  
+  /* 增加上外邊距，將視窗往下推 80px，徹底避開導覽列 */
+  margin-top: 80px !important; 
   
   border-radius: 16px;
   overflow: hidden;
-  box-shadow: 0 12px 40px rgba(0,0,0,0.25);
+  box-shadow: 0 12px 40px rgba(0,0,0,0.3);
   
-  /* 2. 垂直位移：確保視窗稍微靠下一點，避開頂部 Navbar */
-  margin-top: 50px; 
+  /* 確保層級最高 */
+  z-index: 1000000 !important;
   
   animation: modalFadeIn 0.4s ease;
 }
 
-/* 3. 縮小內部間距，讓整體感更緊湊 */
+/* 如果覺得內文還是太擠，縮小標題字體 */
+.modal-header h3 {
+  font-size: 1.0rem !important;
+}
 
+/* 縮小身體的內距，讓視窗看起來更精巧 */
+.modal-body {
+  padding: 15px 20px !important;
+}
 .notice-block h4 {
   font-size: 0.95rem; /* 字體微調小一點 */
   margin-bottom: 5px;
@@ -1473,12 +1482,6 @@ footer {
 }
 
 .modal-header h3 { margin: 0; font-size: 1.2rem; letter-spacing: 1px; }
-.modal-body {
-  padding: 20px;
-  max-height: 60vh;
-  overflow-y: auto;
-}
-
 .notice-block {
   margin-bottom: 20px;
   padding-left: 10px;
