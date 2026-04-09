@@ -1267,21 +1267,66 @@ footer {
   .hero-stats { gap: 28px; }
   .timeline-steps { grid-template-columns: 1fr; gap: 24px; }
   .timeline-line { display: none; }
-  .guide-matrix {
+
+    .guide-matrix {
     height: auto;
-    min-height: 0;
+    overflow: visible;
+    padding: 0;
+    display: block;
+  }
+  /* 隱藏電腦版軸線與卡片 */
+  .matrix-axis, .matrix-axis-v, .matrix-cell-desktop { display: none !important; }
+  /* 顯示手機版象限佈局 */
+  .matrix-mobile-layout { display: block !important; }
+  /* 手機版內部卡片 grid */
+  .guide-matrix-inner-mobile {
     display: grid;
     grid-template-columns: 1fr 1fr;
-    grid-template-rows: auto auto auto auto auto;
-    gap: 0;
-    padding: 0;
-    overflow: visible;
-    background: white;
+    gap: 10px;
+    padding: 10px 12px;
   }
-  /* 隱藏原本 absolute 定位的軸線與 desktop cells（電腦版用的） */
-  .matrix-axis, .matrix-axis-v, .matrix-cell-desktop { display: none !important; }
-
-  /* 手機版象限標籤行 */
+  .matrix-cell {
+    position: static !important;
+    width: auto !important;
+    top: auto !important; left: auto !important;
+    right: auto !important; bottom: auto !important;
+    border-radius: 12px !important;
+    margin: 0;
+  }
+  /* 頂部標籤 Multi-Tier */
+  .matrix-axis-label-top {
+    display: flex;
+    border-bottom: 1px solid rgba(200,180,160,0.35);
+  }
+  .matrix-axis-label-top span {
+    flex: 1; text-align: center; padding: 9px 4px 7px;
+    font-size: .62rem; font-weight: 500; letter-spacing: .08em; color: var(--sage);
+  }
+  .matrix-axis-label-top span:first-child { border-right: 1px solid rgba(200,180,160,0.35); }
+  /* 中軸線 Elegant / Fairytale */
+  .matrix-axis-label-mid {
+    display: flex;
+    border-top: 1px solid rgba(200,180,160,0.3);
+    border-bottom: 1px solid rgba(200,180,160,0.3);
+  }
+  .matrix-axis-label-mid span {
+    flex: 1; text-align: center; padding: 6px 4px;
+    font-size: .62rem; font-weight: 500; letter-spacing: .08em;
+  }
+  .matrix-axis-label-mid span:first-child { color: var(--text-mid); border-right: 1px solid rgba(200,180,160,0.3); }
+  .matrix-axis-label-mid span:last-child { color: var(--deep-rose); }
+  /* 底部標籤 Single-Tier */
+  .matrix-axis-label-bottom {
+    display: flex;
+    border-top: 1px solid rgba(200,180,160,0.35);
+  }
+  .matrix-axis-label-bottom span {
+    flex: 1; text-align: center; padding: 7px 4px 9px;
+    font-size: .62rem; font-weight: 500; letter-spacing: .08em; color: var(--text-lt);
+  }
+  .matrix-axis-label-bottom span:first-child { border-right: 1px solid rgba(200,180,160,0.35);
+  }
+    /* 手機版象限標籤行 */
   .matrix-mobile-axis-top {
     grid-column: 1 / -1;
     display: flex;
@@ -1345,15 +1390,6 @@ footer {
     grid-template-columns: 1fr 1fr;
     gap: 0;
   }
-  .matrix-cell {
-    position: static !important;
-    width: auto !important;
-    top: auto !important; left: auto !important;
-    right: auto !important; bottom: auto !important;
-    border-radius: 0 !important;
-    margin: 8px;
-    border-radius: 12px !important;
-  }
   /* 中線分隔 */
   .matrix-cell:nth-child(odd) { border-right: none; }
 }
@@ -1385,7 +1421,8 @@ footer {
   background: linear-gradient(45deg, rgba(255,255,255,0.1), transparent);
   pointer-events: none;
 }
-
+/* Matrix mobile layout: 桌機隱藏，手機才顯示 */
+.matrix-mobile-layout { display: none; }
 </style>
 </head>
 <body>
@@ -1561,15 +1598,75 @@ footer {
       <h2 class="section-title" style="text-align:center">幸福<em>禮盒指南</em></h2>
       <p class="section-desc" style="margin:0 auto;text-align:center">在這座幸福工場裡，總有一本屬於您的童話故事。</p>
     </div>
-    <div class="guide-matrix reveal" style="margin-top:40px">
-      <!-- Horizontal axis -->
-      <div class="matrix-axis matrix-axis-h">
-        <div class="matrix-axis-h-line"></div>
-        <div class="matrix-axis-h-label-l">雋永優雅 Elegant</div>
-        <div class="matrix-axis-h-line" style="background:linear-gradient(to left,transparent,rgba(200,180,160,0.3),transparent)"></div>
-        <div class="matrix-axis-h-label-r">奇幻童話 Fairytale</div>
-        <div class="matrix-axis-h-line"></div>
+   <div class="guide-matrix reveal" style="margin-top:40px">
+
+  <!-- 電腦版：十字軸線 -->
+  <div class="matrix-axis matrix-axis-h">
+    <div class="matrix-axis-h-line"></div>
+    <div class="matrix-axis-h-label-l">雋永優雅 Elegant</div>
+    <div class="matrix-axis-h-line" style="background:linear-gradient(to left,transparent,rgba(200,180,160,0.3),transparent)"></div>
+    <div class="matrix-axis-h-label-r">奇幻童話 Fairytale</div>
+    <div class="matrix-axis-h-line"></div>
+  </div>
+  <div class="matrix-axis-v">
+    <div class="matrix-axis-v-label-t">尊榮多層<br>Multi-Tier</div>
+    <div class="matrix-axis-v-line"></div>
+    <div class="matrix-axis-v-label-b">精巧單層<br>Single-Tier</div>
+  </div>
+
+  <!-- 電腦版：四個象限卡片（absolute 定位） -->
+  <div class="matrix-cell matrix-cell-desktop reveal" style="top:8%;left:4%;width:40%;background:linear-gradient(135deg,rgba(247,214,216,0.3),rgba(240,217,154,0.2));border:1px solid rgba(247,214,216,0.6)">
+    <div class="matrix-cell-title">🌺 Yumthé 花獻（雙層）</div>
+    <div class="matrix-cell-items">幸福花磚（雙/三層）<br>搭配玫瑰茶·桂花烏龍·土鳳梨酥</div>
+  </div>
+  <div class="matrix-cell matrix-cell-desktop reveal" style="top:8%;right:4%;width:40%;background:linear-gradient(135deg,rgba(200,230,216,0.3),rgba(180,210,230,0.2));border:1px solid rgba(200,230,216,0.6)">
+    <div class="matrix-cell-title">🎶 星空下的不來梅（雙層）</div>
+    <div class="matrix-cell-items">美好時光（雙層）<br>溫馨抽屜盒設計·多款組合</div>
+  </div>
+  <div class="matrix-cell matrix-cell-desktop reveal" style="bottom:8%;left:4%;width:40%;background:linear-gradient(135deg,rgba(180,200,220,0.25),rgba(160,190,210,0.15));border:1px solid rgba(180,200,220,0.5)">
+    <div class="matrix-cell-title">✨ 精采世界聯名</div>
+    <div class="matrix-cell-items">經典蛋捲鐵盒<br>絕美漸層包裝·6種口味</div>
+  </div>
+  <div class="matrix-cell matrix-cell-desktop reveal" style="bottom:8%;right:4%;width:40%;background:linear-gradient(135deg,rgba(220,190,170,0.25),rgba(210,180,160,0.15));border:1px solid rgba(220,190,170,0.5)">
+    <div class="matrix-cell-title">🌙 美好夢想聯名</div>
+    <div class="matrix-cell-items">麵包樹聯名系列<br>愛麗絲夢遊仙境·童趣彌月首選</div>
+  </div>
+
+  <!-- 手機版：完整象限結構 -->
+  <div class="matrix-mobile-layout">
+    <div class="matrix-axis-label-top">
+      <span>尊榮多層 Multi-Tier</span>
+      <span>尊榮多層 Multi-Tier</span>
+    </div>
+    <div class="guide-matrix-inner-mobile">
+      <div class="matrix-cell reveal" style="background:linear-gradient(135deg,rgba(247,214,216,0.3),rgba(240,217,154,0.2));border:1px solid rgba(247,214,216,0.6)">
+        <div class="matrix-cell-title">🌺 Yumthé 花獻（雙層）</div>
+        <div class="matrix-cell-items">幸福花磚（雙/三層）<br>搭配玫瑰茶·桂花烏龍·土鳳梨酥</div>
       </div>
+      <div class="matrix-cell reveal" style="background:linear-gradient(135deg,rgba(200,230,216,0.3),rgba(180,210,230,0.2));border:1px solid rgba(200,230,216,0.6)">
+        <div class="matrix-cell-title">🎶 星空下的不來梅（雙層）</div>
+        <div class="matrix-cell-items">美好時光（雙層）<br>溫馨抽屜盒設計·多款組合</div>
+      </div>
+    </div>
+    <div class="matrix-axis-label-mid">
+      <span>雋永優雅 Elegant</span>
+      <span>奇幻童話 Fairytale</span>
+    </div>
+    <div class="guide-matrix-inner-mobile">
+      <div class="matrix-cell reveal" style="background:linear-gradient(135deg,rgba(180,200,220,0.25),rgba(160,190,210,0.15));border:1px solid rgba(180,200,220,0.5)">
+        <div class="matrix-cell-title">✨ 精采世界聯名</div>
+        <div class="matrix-cell-items">經典蛋捲鐵盒<br>絕美漸層包裝·6種口味</div>
+      </div>
+      <div class="matrix-cell reveal" style="background:linear-gradient(135deg,rgba(220,190,170,0.25),rgba(210,180,160,0.15));border:1px solid rgba(220,190,170,0.5)">
+        <div class="matrix-cell-title">🌙 美好夢想聯名</div>
+        <div class="matrix-cell-items">麵包樹聯名系列<br>愛麗絲夢遊仙境·童趣彌月首選</div>
+      </div>
+    </div>
+    <div class="matrix-axis-label-bottom">
+      <span>精巧單層 Single-Tier</span>
+      <span>精巧單層 Single-Tier</span>
+    </div>
+  </div>
       <!-- Vertical axis -->
       <div class="matrix-axis-v">
         <div class="matrix-axis-v-label-t">尊榮多層<br>Multi-Tier</div>
