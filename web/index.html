@@ -1438,12 +1438,29 @@ footer {
 
 .modal-content {
   background: #fff;
-  width: 90%;
-  max-width: 480px;
+  /* 1. 縮小寬度：從 90% 改為 85%，在手機上看起來更精緻 */
+  width: 85%; 
+  max-width: 400px; /* 電腦版也同步縮小一點 */
+  
   border-radius: 16px;
   overflow: hidden;
-  box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+  box-shadow: 0 12px 40px rgba(0,0,0,0.25);
+  
+  /* 2. 垂直位移：確保視窗稍微靠下一點，避開頂部 Navbar */
+  margin-top: 50px; 
+  
   animation: modalFadeIn 0.4s ease;
+}
+
+/* 3. 縮小內部間距，讓整體感更緊湊 */
+
+.notice-block h4 {
+  font-size: 0.95rem; /* 字體微調小一點 */
+  margin-bottom: 5px;
+}
+
+.notice-block p {
+  font-size: 13px; /* 內文稍微縮小，增加可讀空間 */
 }
 
 .modal-header {
@@ -1456,10 +1473,9 @@ footer {
 }
 
 .modal-header h3 { margin: 0; font-size: 1.2rem; letter-spacing: 1px; }
-
 .modal-body {
-  padding: 24px;
-  max-height: 65vh;
+  padding: 20px;
+  max-height: 60vh;
   overflow-y: auto;
 }
 
