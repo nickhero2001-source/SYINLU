@@ -882,7 +882,7 @@ footer {
 /* The big open-book background shape */
 .magic-book-body {
   position: relative;
-  width: 100%; max-width: 1100px;
+  width: 100%; max-width: 1200px;
   background:
     linear-gradient(175deg, #f5e8c8 0%, #ede0b0 30%, #e8d8a0 60%, #dfd090 100%);
   border-radius: 8px 8px 32px 32px;
@@ -892,8 +892,8 @@ footer {
     0 8px 20px rgba(120,80,30,0.15),
     inset 0 2px 8px rgba(255,240,200,0.6),
     inset 0 -4px 12px rgba(120,80,30,0.1);
-  padding: 36px 32px 44px;
-  overflow: visible;
+  padding: 36px 20px 44px;
+  overflow: hidden; 
 }
 
 /* Parchment paper texture overlay */
@@ -998,8 +998,10 @@ footer {
 .magic-book-track {
   position: relative; z-index: 2;
   display: flex; justify-content: center;
-  gap: 20px; flex-wrap: nowrap;
+  gap: 16px; flex-wrap: nowrap;
   perspective: 1400px;
+  overflow-x: auto;    /* ← 小螢幕可橫捲，大螢幕不影響 */
+  padding-bottom: 8px; 
 }
 
 /* Each page card */
@@ -1980,7 +1982,7 @@ src="https://i.ibb.co/Mxq4S51K/S.jpg" alt="S" border="0" /></a>" alt="美好夢�
       <div class="series-header reveal">
         <div class="series-icon" style="background:linear-gradient(135deg,#e8eaf6,#c5cae9)">✨</div>
         <div>
-          <div class="series-name">其他精選系列</div>
+          <div class="series-name">蛋捲精選系列</div>
           <div class="series-note">精采世界 · 愛麗絲夢遊仙境 · 星空蛋捲鐵盒 · 家庭分享包</div>
         </div>
       </div>
