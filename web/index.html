@@ -893,7 +893,7 @@ footer {
     inset 0 2px 8px rgba(255,240,200,0.6),
     inset 0 -4px 12px rgba(120,80,30,0.1);
   padding: 36px 20px 44px;
-  overflow: hidden; 
+  overflow: visible;; 
 }
 
 /* Parchment paper texture overlay */
@@ -997,11 +997,12 @@ footer {
 /* Book pages track — sits on top of parchment */
 .magic-book-track {
   position: relative; z-index: 2;
-  display: flex; justify-content: center;
+  display: flex; justify-content: flex-start;;
   gap: 16px; flex-wrap: nowrap;
   perspective: 1400px;
   overflow-x: auto;    /* ← 小螢幕可橫捲，大螢幕不影響 */
-  padding-bottom: 8px; 
+  padding: 0 24px 8px;   /* ← 左右留呼吸空間 */
+  scroll-padding-left: 24px;
 }
 
 /* Each page card */
