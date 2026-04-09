@@ -1268,29 +1268,94 @@ footer {
   .timeline-steps { grid-template-columns: 1fr; gap: 24px; }
   .timeline-line { display: none; }
   .guide-matrix {
-    display:400px; grid;
+    height: auto;
+    min-height: 0;
+    display: grid;
     grid-template-columns: 1fr 1fr;
-    grid-template-rows: auto auto auto;
-    gap: 12px;
-    padding: 16px;
+    grid-template-rows: auto auto auto auto auto;
+    gap: 0;
+    padding: 0;
     overflow: visible;
-    position: relative;
-    margin: 20px 0;
+    background: white;
   }
-  .matrix-axis, .matrix-axis-v { display: block!important;}
-  .matrix-axis-h-label-l, .matrix-axis-h-label-r,
-  .matrix-axis-v-label-t, .matrix-axis-v-label-b {
-    font-size: 10px;
-    white-space: nowrap;
+  /* 隱藏原本 absolute 定位的軸線與 desktop cells（電腦版用的） */
+  .matrix-axis, .matrix-axis-v, .matrix-cell-desktop { display: none !important; }
+
+  /* 手機版象限標籤行 */
+  .matrix-mobile-axis-top {
+    grid-column: 1 / -1;
+    display: flex;
+    justify-content: center;
+    gap: 0;
+  }
+  .matrix-mobile-axis-top .axis-label {
+    flex: 1; text-align: center;
+    padding: 10px 4px 6px;
+    font-size: .68rem; font-weight: 500; letter-spacing: .1em;
+    color: var(--sage);
+    border-bottom: 1px solid rgba(200,180,160,0.3);
+  }
+  .matrix-mobile-axis-top .axis-label:first-child { border-right: 1px solid rgba(200,180,160,0.3); }
+
+  .matrix-mobile-axis-center {
+    grid-column: 1 / -1;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    position: relative;
+  }
+  .matrix-mobile-axis-center::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 0; right: 0;
+    height: 1px;
+    background: linear-gradient(to right, transparent, rgba(200,180,160,0.35), transparent);
+    transform: translateY(-50%);
+  }
+  .matrix-mobile-axis-h-label {
+    padding: 6px 8px;
+    font-size: .65rem; font-weight: 500; letter-spacing: .08em;
+    display: flex; align-items: center; justify-content: center;
+    border-top: 1px solid rgba(200,180,160,0.3);
+    border-bottom: 1px solid rgba(200,180,160,0.3);
+  }
+  .matrix-mobile-axis-h-label:first-child {
+    color: var(--text-mid);
+    border-right: 1px solid rgba(200,180,160,0.3);
+  }
+  .matrix-mobile-axis-h-label:last-child { color: var(--deep-rose); }
+
+  .matrix-mobile-axis-bottom {
+    grid-column: 1 / -1;
+    display: flex;
+  }
+  .matrix-mobile-axis-bottom .axis-label {
+    flex: 1; text-align: center;
+    padding: 6px 4px 10px;
+    font-size: .68rem; font-weight: 500; letter-spacing: .1em;
+    color: var(--text-lt);
+    border-top: 1px solid rgba(200,180,160,0.3);
+  }
+  .matrix-mobile-axis-bottom .axis-label:first-child { border-right: 1px solid rgba(200,180,160,0.3); }
+
+  /* 四個象限卡片 */
+  .matrix-mobile-cells {
+    grid-column: 1 / -1;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0;
   }
   .matrix-cell {
     position: static !important;
     width: auto !important;
-    top: auto !important;
-    left: auto !important;
-    right: auto !important;
-    bottom: auto !important;
+    top: auto !important; left: auto !important;
+    right: auto !important; bottom: auto !important;
+    border-radius: 0 !important;
+    margin: 8px;
+    border-radius: 12px !important;
   }
+  /* 中線分隔 */
+  .matrix-cell:nth-child(odd) { border-right: none; }
 }
 
 /* 新增：職人照片容器樣式 */
