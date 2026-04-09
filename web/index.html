@@ -1424,40 +1424,41 @@ footer {
 /* Matrix mobile layout: 桌機隱藏，手機才顯示 */
 .matrix-mobile-layout { display: none; }
   /* --- 安全提醒彈出視窗樣式 --- */
+/* 1. 修改遮罩：將垂直對齊從 center 改為 flex-start，才能靠上對齊 */
 .modal-overlay {
-  display: none; 
+  display: none;
   position: fixed;
   top: 0; left: 0;
   width: 100%; height: 100%;
-  background: rgba(0, 0, 0, 0.6);
-  z-index: 9999;
-  align-items: center;
-  justify-content: center;
-  backdrop-filter: blur(3px); /* 背景模糊增加質感 */
-}
-.modal-content {
-  background: #fff;
-  /* 使用 !important 強制寬度縮小到 80% */
-  width: 80% !important; 
-  max-width: 380px !important; 
+  background: rgba(0, 0, 0, 0.7);
+  z-index: 999999 !important; /* 確保在最頂層 */
   
-  /* 增加上外邊距，將視窗往下推 80px，徹底避開導覽列 */
-  margin-top: 80px !important; 
+  display: flex;
+  justify-content: center; /* 水平居中 */
+  align-items: flex-start; /* 關鍵修正：靠上對齊，margin 才會生效 */
   
-  border-radius: 16px;
-  overflow: hidden;
-  box-shadow: 0 12px 40px rgba(0,0,0,0.3);
-  
-  /* 確保層級最高 */
-  z-index: 1000000 !important;
-  
-  animation: modalFadeIn 0.4s ease;
+  backdrop-filter: blur(4px);
+  overflow-y: auto; /* 若手機版太長可以滾動 */
 }
 
-/* 如果覺得內文還是太擠，縮小標題字體 */
-.modal-header h3 {
-  font-size: 1.0rem !important;
+/* 2. 修改內容物：縮小寬度並向下推 */
+.modal-content {
+  background: #fff;
+  /* 強制縮小寬度，讓四周留白更多 */
+  width: 80% !important; 
+  max-width: 360px !important; 
+  
+  /* 關鍵修正：因為上方設為 flex-start，這裡的 margin 就能精準推開距離 */
+  margin-top: 100px !important; 
+  margin-bottom: 50px;
+
+  border-radius: 20px;
+  overflow: hidden;
+  box-shadow: 0 15px 50px rgba(0,0,0,0.4);
+  animation: modalFadeIn 0.4s cubic-bezier(0.165, 0.84, 0.44, 1);
 }
+
+/* 3. 標頭稍微縮小，視覺更精巧 */
 
 /* 縮小身體的內距，讓視窗看起來更精巧 */
 .modal-body {
@@ -1473,7 +1474,7 @@ footer {
 }
 
 .modal-header {
-  padding: 18px 24px;
+  padding: 12px 20px;
   background: #c8b4a0; /* 配合您的主色調 */
   color: white;
   display: flex;
@@ -1481,7 +1482,7 @@ footer {
   align-items: center;
 }
 
-.modal-header h3 { margin: 0; font-size: 1.2rem; letter-spacing: 1px; }
+.modal-header h3 { margin: 0; font-size: 1rem; letter-spacing: 1px; }
 .notice-block {
   margin-bottom: 20px;
   padding-left: 10px;
