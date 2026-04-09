@@ -1268,15 +1268,21 @@ footer {
   .timeline-steps { grid-template-columns: 1fr; gap: 24px; }
   .timeline-line { display: none; }
   .guide-matrix {
-    height: auto;
-    display: grid;
+    display:400px; grid;
     grid-template-columns: 1fr 1fr;
     grid-template-rows: auto auto auto;
     gap: 12px;
     padding: 16px;
     overflow: visible;
+    position: relative;
+    margin: 20px 0;
   }
-  .matrix-axis, .matrix-axis-v { display: none; }
+  .matrix-axis, .matrix-axis-v { display: block!important;}
+  .matrix-axis-h-label-l, .matrix-axis-h-label-r,
+  .matrix-axis-v-label-t, .matrix-axis-v-label-b {
+    font-size: 10px;
+    white-space: nowrap;
+  }
   .matrix-cell {
     position: static !important;
     width: auto !important;
