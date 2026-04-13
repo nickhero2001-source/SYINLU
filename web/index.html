@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="zh-Hant">
+<html lang="zh-Hant" translate="no" class="notranslate">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -1536,7 +1536,17 @@ footer {
   from { opacity: 0; transform: translateY(20px); }
   to { opacity: 1; transform: translateY(0); }
 }
-  
+/* 強制禁止所有翻譯軟體對網頁進行轉換 */
+html {
+  -webkit-text-size-adjust: none;
+  unicode-bidi: isolate;
+}
+
+/* 針對金額或是容易出錯的區塊，標註不准翻譯 */
+.price-table, .footer-note, footer, .modal-content {
+  translate: no !important;
+}
+
 </style>
 </head>
 <body>
