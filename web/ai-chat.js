@@ -4,8 +4,12 @@
    模組化重點：
    - 不修改既有版型/商品頁/動畫，僅在 <body> 結尾附加獨立元件
    - 所有邏輯包在 IIFE 內，避免污染全域變數（僅暴露 window.AIConcierge）
-   - sendToAI() 為預留串接真實 AI（OpenAI／Claude API）的唯一入口，
-     目前內部呼叫 window.MockAI，之後串接時只需改寫這支函式的內容
+   - sendToAI() 為統一的訊息處理入口：
+       · window.USE_MOCK === true  → 使用 mock-ai.js 的假資料對話樹
+       · window.USE_MOCK === false → 改用 window.aiService.sendMessage()
+       · 若 aiService 發生任何錯誤，會自動 fallback 回 mock-ai.js，
+         確保聊天室不會因為 AI Service 尚未就緒或未來串接 API
+         發生問題而整個無法使用
    ========================================================= */
 
 (function () {
@@ -199,8 +203,14 @@
     }
 
     simulateThinking(function () {
-      const reply = sendToAI({ type: "payload", value: payload });
-      renderBotMessage(reply);
+      sendToAI({ type: "payload", value: payload, label: label })
+        .then(function (reply) {
+          renderBotMessage(reply);
+        })
+        .catch(function (err) {
+          console.error("[AIConcierge] 訊息處理發生未預期錯誤：", err);
+          renderBotMessage({ text: "不好意思，系統暫時無法回應，請稍後再試。", quickReplies: [], cards: [] });
+        });
     });
   }
 
@@ -212,8 +222,14 @@
     state.history.push({ from: "user", text: text });
 
     simulateThinking(function () {
-      const reply = sendToAI({ type: "text", value: text });
-      renderBotMessage(reply);
+      sendToAI({ type: "text", value: text })
+        .then(function (reply) {
+          renderBotMessage(reply);
+        })
+        .catch(function (err) {
+          console.error("[AIConcierge] 訊息處理發生未預期錯誤：", err);
+          renderBotMessage({ text: "不好意思，系統暫時無法回應，請稍後再試。", quickReplies: [], cards: [] });
+        });
     });
   }
 
@@ -229,22 +245,82 @@
   }
 
   // =========================================================
-  //  sendToAI()  —— 預留串接真實 AI 服務的唯一入口
+  //  sendToAI()  —— 統一的訊息處理入口（Mock ↔ AI Service）
   // ---------------------------------------------------------
-  //  現況：呼叫 window.MockAI.respond() 回傳假資料
-  //  未來串接 OpenAI / Claude API 時，建議作法：
-  //    1) 將此函式改為 async，並改用 fetch() 呼叫後端代理
-  //       （切勿在前端直接放 API Key，需透過自架後端或 Cloudflare
-  //         Worker 轉發請求，並記得同步更新 _headers 的
-  //         connect-src 白名單）
-  //    2) 保持傳入/傳出的資料結構一致：
-  //       輸入 { type: 'text'|'payload', value: string }
-  //       輸出 { text: string, quickReplies?: [...], cards?: [...] }
-  //       如此一來 ai-chat.js 的渲染邏輯完全不需要更動
+  //  輸入 { type: 'text'|'payload', value: string, label?: string }
+  //  輸出 Promise<{ text: string, quickReplies?: [...], cards?: [...] }>
+  //
+  //  · window.USE_MOCK === true（預設）
+  //      直接使用 mock-ai.js 的假資料對話樹（window.MockAI.respond）
+  //  · window.USE_MOCK === false
+  //      改用 window.aiService.sendMessage() 取得回覆，並將回傳格式
+  //      轉換成 ai-chat.js 渲染邏輯需要的 { text, quickReplies, cards } 結構
+  //  · 任何情況下 aiService 呼叫失敗（尚未載入／future API 錯誤等），
+  //      一律 catch 起來並自動 fallback 回 mock-ai.js，
+  //      確保聊天室不會整個無法使用
+  //
+  //  未來要正式串接 OpenAI／Claude API：
+  //    不需要更動這支函式，只需要修改 /js/ai/ai-service.js 內的
+  //    callAI()，把 Mock 回覆換成真正的 fetch() API 呼叫即可。
   // =========================================================
-  function sendToAI(input) {
-    // TODO: 之後串接真實 AI 服務時，將下面這行替換為 API 呼叫
+  async function sendToAI(input) {
+    if (window.USE_MOCK) {
+      return getMockReply(input);
+    }
+
+    try {
+      if (!window.aiService || typeof window.aiService.sendMessage !== "function") {
+        throw new Error("window.aiService 尚未就緒，請確認 /js/ai/ 相關檔案已於 ai-chat.js 之前載入");
+      }
+
+      // quick reply 的 payload（如 flow:gift）對 aiService 而言沒有意義，
+      // 一律改用使用者實際看到、點擊的文字（label）作為訊息內容
+      const messageForAI = input.type === "payload" ? input.label || input.value : input.value;
+
+      const result = await window.aiService.sendMessage(messageForAI);
+
+      if (!result || result.success !== true) {
+        throw new Error("aiService 回傳失敗結果，自動切回 Mock 模式");
+      }
+
+      return adaptAIServiceResponse(result);
+    } catch (err) {
+      console.warn("[AIConcierge] aiService 呼叫失敗，自動切回 mock-ai.js：", err);
+      return getMockReply(input);
+    }
+  }
+
+  /**
+   * 呼叫 mock-ai.js 取得假資料回覆（維持原本的對話樹行為）
+   * @param {{type:string, value:string}} input - 使用者輸入
+   * @returns {{text:string, quickReplies:Array, cards:Array}}
+   */
+  function getMockReply(input) {
     return window.MockAI.respond(input, state);
+  }
+
+  /**
+   * 將 window.aiService.sendMessage() 回傳的統一格式
+   * { success, reply, products, quickReply, form, context }
+   * 轉換成 ai-chat.js 渲染邏輯所需的 { text, quickReplies, cards } 結構，
+   * 讓畫面呈現方式完全不受影響。
+   * @param {{reply:string, products:Array, quickReply:Array}} result - aiService 回傳結果
+   * @returns {{text:string, quickReplies:Array, cards:Array}}
+   */
+  function adaptAIServiceResponse(result) {
+    const quickReplies = Array.isArray(result.quickReply)
+      ? result.quickReply.map(function (qr) {
+          return { label: qr.title, payload: qr.value };
+        })
+      : [];
+
+    const cards = Array.isArray(result.products)
+      ? result.products.map(function (p) {
+          return { title: p.name, desc: p.description, price: p.price };
+        })
+      : [];
+
+    return { text: result.reply || "", quickReplies: quickReplies, cards: cards };
   }
 
   // ---------- 初始化 ----------
@@ -271,3 +347,4 @@
     sendToAI: sendToAI
   };
 })();
+
