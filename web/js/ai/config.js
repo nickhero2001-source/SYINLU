@@ -44,3 +44,21 @@ window.AI_STATUS = {
   typing: false,
   online: true
 };
+
+/**
+ * 聊天室資料來源開關（Mock ↔ AI Service 切換）
+ * -----------------------------------------------------------
+ * true  → 聊天室使用 mock-ai.js 的假資料對話樹（目前預設）
+ * false → 聊天室改用 window.aiService.sendMessage() 取得回覆
+ *
+ * 使用情境：
+ *   - 開發/展示階段，想維持現有的假資料對話流程 → 保持 true
+ *   - 想測試 AI Service 架構（目前 callAI() 內部仍是 Mock，
+ *     之後會替換為真正的 OpenAI API）→ 改成 false
+ *
+ * 注意：即使設為 false，一旦 aiService 呼叫失敗（例如尚未載入、
+ * 或未來串接真實 API 時發生網路錯誤），ai-chat.js 會自動切回
+ * mock-ai.js，確保聊天室不會整個掛掉。
+ * @type {boolean}
+ */
+window.USE_MOCK = true;
