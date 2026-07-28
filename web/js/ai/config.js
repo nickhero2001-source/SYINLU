@@ -84,3 +84,4 @@ window.USE_KNOWLEDGE_ENGINE = true;
  * @type {string}
  */
 window.KNOWLEDGE_JSON_URL = "/knowledge.json";
+
