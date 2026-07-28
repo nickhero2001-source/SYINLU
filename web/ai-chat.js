@@ -4,12 +4,18 @@
    模組化重點：
    - 不修改既有版型/商品頁/動畫，僅在 <body> 結尾附加獨立元件
    - 所有邏輯包在 IIFE 內，避免污染全域變數（僅暴露 window.AIConcierge）
-   - sendToAI() 為統一的訊息處理入口：
-       · window.USE_MOCK === true  → 使用 mock-ai.js 的假資料對話樹
-       · window.USE_MOCK === false → 改用 window.aiService.sendMessage()
-       · 若 aiService 發生任何錯誤，會自動 fallback 回 mock-ai.js，
-         確保聊天室不會因為 AI Service 尚未就緒或未來串接 API
-         發生問題而整個無法使用
+   - sendToAI() 為統一的訊息處理入口，依序判斷：
+       1) 使用者「自由輸入文字」且 window.USE_KNOWLEDGE_ENGINE === true
+          → 優先交給 Knowledge Engine 搜尋 knowledge.json；
+            找到答案就回覆並附上「查看更多」按鈕，
+            找不到則顯示固定的「找不到相關資訊」訊息 —
+            這個分支全程不會呼叫任何 AI／OpenAI。
+       2) 其餘情況（快速選項點擊，或 Knowledge Engine 關閉時的文字輸入）：
+          · window.USE_MOCK === true  → 使用 mock-ai.js 的假資料對話樹
+          · window.USE_MOCK === false → 改用 window.aiService.sendMessage()
+          · 若 aiService 發生任何錯誤，會自動 fallback 回 mock-ai.js，
+            確保聊天室不會因為 AI Service 尚未就緒或未來串接 API
+            發生問題而整個無法使用
    ========================================================= */
 
 (function () {
@@ -142,7 +148,7 @@
   }
 
   function renderBotMessage(msg) {
-    // msg: { text, quickReplies, cards }
+    // msg: { text, quickReplies, cards, moreUrl }
     const row = document.createElement("div");
     row.className = "ac-row bot";
 
@@ -170,19 +176,35 @@
       });
     }
 
-    // 快速回覆按鈕
-    if (msg.quickReplies && msg.quickReplies.length) {
+    // 快速回覆按鈕 ＋「查看更多」連結按鈕（沿用同一排 chip 樣式，不新增 CSS）
+    const hasQuickReplies = msg.quickReplies && msg.quickReplies.length;
+    const hasMoreUrl = !!msg.moreUrl;
+    if (hasQuickReplies || hasMoreUrl) {
       const qrWrap = document.createElement("div");
       qrWrap.className = "ac-quick-replies";
-      msg.quickReplies.forEach(function (qr) {
-        const chip = document.createElement("button");
-        chip.className = "ac-chip";
-        chip.textContent = qr.label;
-        chip.addEventListener("click", function () {
-          onQuickReply(qr.label, qr.payload);
+
+      if (hasQuickReplies) {
+        msg.quickReplies.forEach(function (qr) {
+          const chip = document.createElement("button");
+          chip.className = "ac-chip";
+          chip.textContent = qr.label;
+          chip.addEventListener("click", function () {
+            onQuickReply(qr.label, qr.payload);
+          });
+          qrWrap.appendChild(chip);
         });
-        qrWrap.appendChild(chip);
-      });
+      }
+
+      if (hasMoreUrl) {
+        const moreLink = document.createElement("a");
+        moreLink.className = "ac-chip";
+        moreLink.textContent = "查看更多 ↗";
+        moreLink.href = msg.moreUrl;
+        moreLink.target = "_blank";
+        moreLink.rel = "noopener";
+        qrWrap.appendChild(moreLink);
+      }
+
       body.appendChild(qrWrap);
     }
 
@@ -264,6 +286,12 @@
   //    callAI()，把 Mock 回覆換成真正的 fetch() API 呼叫即可。
   // =========================================================
   async function sendToAI(input) {
+    // 1) 使用者自由輸入文字 → 優先交給 Knowledge Engine（不呼叫任何 AI）
+    if (input.type === "text" && window.USE_KNOWLEDGE_ENGINE) {
+      return getKnowledgeReply(input.value);
+    }
+
+    // 2) 其餘情況：維持原本 Mock ↔ AI Service 的流程
     if (window.USE_MOCK) {
       return getMockReply(input);
     }
@@ -288,6 +316,47 @@
       console.warn("[AIConcierge] aiService 呼叫失敗，自動切回 mock-ai.js：", err);
       return getMockReply(input);
     }
+  }
+
+  /**
+   * 呼叫 Knowledge Engine 搜尋 knowledge.json 取得回覆。
+   * 找到資料：回傳該筆 content，若有 url 則一併附上（供「查看更多」按鈕使用）。
+   * 找不到資料：回傳固定的「找不到相關資訊」訊息。
+   * 這兩種情況全程都不會呼叫任何 AI／OpenAI。
+   * 僅在 Knowledge Engine 本身發生非預期錯誤（例如尚未載入）時，
+   * 才 catch 起來改用同樣固定的訊息，確保聊天室不會中斷。
+   * @param {string} query - 使用者輸入的文字
+   * @returns {Promise<{text:string, quickReplies:Array, cards:Array, moreUrl:(string|null)}>}
+   */
+  async function getKnowledgeReply(query) {
+    const FALLBACK_TEXT = "很抱歉，目前我沒有找到相關資訊。若您需要進一步協助，歡迎聯絡我們。";
+
+    try {
+      if (!window.knowledgeEngine || typeof window.knowledgeEngine.answer !== "function") {
+        throw new Error("window.knowledgeEngine 尚未就緒，請確認 knowledge-engine.js 已於 ai-chat.js 之前載入");
+      }
+      const result = await window.knowledgeEngine.answer(query);
+      return adaptKnowledgeResponse(result);
+    } catch (err) {
+      console.warn("[AIConcierge] Knowledge Engine 查詢發生錯誤，改用固定回覆：", err);
+      return { text: FALLBACK_TEXT, quickReplies: [], cards: [], moreUrl: null };
+    }
+  }
+
+  /**
+   * 將 window.knowledgeEngine.answer() 的回傳格式
+   * { found, title, content, url }
+   * 轉換成 ai-chat.js 渲染邏輯所需的 { text, quickReplies, cards, moreUrl } 結構。
+   * @param {{found:boolean, content:string, url:(string|null)}} result - Knowledge Engine 回傳結果
+   * @returns {{text:string, quickReplies:Array, cards:Array, moreUrl:(string|null)}}
+   */
+  function adaptKnowledgeResponse(result) {
+    return {
+      text: result.content,
+      quickReplies: [],
+      cards: [],
+      moreUrl: result.found && result.url ? result.url : null
+    };
   }
 
   /**
@@ -347,4 +416,3 @@
     sendToAI: sendToAI
   };
 })();
-
