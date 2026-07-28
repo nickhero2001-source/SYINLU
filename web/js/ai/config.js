@@ -62,3 +62,25 @@ window.AI_STATUS = {
  * @type {boolean}
  */
 window.USE_MOCK = true;
+
+/**
+ * 智慧知識搜尋引擎（Knowledge Engine）開關
+ * -----------------------------------------------------------
+ * true  → 使用者於聊天室輸入的文字訊息，優先交由 Knowledge Engine
+ *         搜尋 knowledge.json，找到答案就直接回覆，找不到則顯示
+ *         固定的「找不到相關資訊」訊息，全程不呼叫任何 AI／OpenAI。
+ * false → 略過 Knowledge Engine，文字訊息改走原本的
+ *         mock-ai.js／aiService 流程（依 window.USE_MOCK 決定）。
+ *
+ * 注意：此開關只影響「使用者自由輸入文字」的訊息；
+ * 聊天室的快速選項（quick reply／選單按鈕）點擊仍走原本的
+ * mock-ai.js 對話樹，不受此開關影響。
+ * @type {boolean}
+ */
+window.USE_KNOWLEDGE_ENGINE = true;
+
+/**
+ * knowledge.json 的載入路徑（相對於網站根目錄）
+ * @type {string}
+ */
+window.KNOWLEDGE_JSON_URL = "/knowledge.json";
