@@ -1,35 +1,55 @@
 /* =========================================================
    幸福+工場 · AI 採購顧問（浮動客服元件）
    -----------------------------------------------------------
-   模組化重點：
+   架構重構說明（Mock AI 已完全移除）：
    - 不修改既有版型/商品頁/動畫，僅在 <body> 結尾附加獨立元件
    - 所有邏輯包在 IIFE 內，避免污染全域變數（僅暴露 window.AIConcierge）
-   - sendToAI() 為統一的訊息處理入口，依序判斷：
-       1) 使用者「自由輸入文字」且 window.USE_KNOWLEDGE_ENGINE === true
-          → 優先交給 Knowledge Engine 搜尋 knowledge.json；
-            找到答案就回覆並附上「查看更多」按鈕，
-            找不到則顯示固定的「找不到相關資訊」訊息 —
-            這個分支全程不會呼叫任何 AI／OpenAI。
-       2) 其餘情況（快速選項點擊，或 Knowledge Engine 關閉時的文字輸入）：
-          · window.USE_MOCK === true  → 使用 mock-ai.js 的假資料對話樹
-          · window.USE_MOCK === false → 改用 window.aiService.sendMessage()
-          · 若 aiService 發生任何錯誤，會自動 fallback 回 mock-ai.js，
-            確保聊天室不會因為 AI Service 尚未就緒或未來串接 API
-            發生問題而整個無法使用
+   - 全站只有「一套知識來源」：knowledge.json → knowledge-engine.js。
+     所有商品、FAQ、ESG、企業採購相關的「內容」一律來自 Knowledge Engine
+     的搜尋結果，本檔案不寫死任何商品/FAQ/ESG 內容。
+     （選單按鈕上的文字如「婚禮喜餅」只是導覽用的 UI 標籤，
+       點擊後一律送進 Knowledge Engine 搜尋，不是資料本身）
+
+   訊息流程（依規格簡化）：
+     使用者輸入文字      → sendToAI() → Knowledge Engine → 回答
+     Quick Reply（知識類）→ sendToAI() → Knowledge Engine → 回答
+     Quick Reply（詢價類）→ 詢價流程（本檔案內建的獨立狀態機）→ 完成摘要
+     Quick Reply（選單/連結類）→ 直接處理，不經過 sendToAI()
+
+   sendToAI() 不再有任何 Mock fallback，也不呼叫 aiService/OpenAI；
+   若 Knowledge Engine 發生非預期錯誤，一律回覆固定的
+   「很抱歉，目前我沒有找到相關資訊」訊息。
+
+   註：/js/ai/ai-service.js（含 OpenAI 串接的保留架構）目前仍會被
+   index.html 載入，但本檔案已不再呼叫它——那是刻意保留給「未來若要
+   加入真正的 AI 對話能力」時使用的獨立備用架構，與目前的知識庫問答
+   流程無關，不屬於本次要清除的 Mock 架構。
    ========================================================= */
 
 (function () {
   "use strict";
 
+  // ---------- 找不到答案時的固定回覆（需與 knowledge-engine.js 保持一致） ----------
+  const NOT_FOUND_TEXT = "很抱歉，目前我沒有找到相關資訊。若您需要進一步協助，歡迎聯絡我們。";
+
+  // ---------- 外部連結（僅為導轉用途，非知識內容） ----------
+  const LINKS = {
+    survey: "https://www.surveycake.com/s/xOYP9",
+    line: "https://line.me/R/ti/p/@570brfxc/"
+  };
+
   // ---------- 對話狀態（僅存在於記憶體中，重新整理頁面會重置） ----------
   const state = {
     opened: false,
     firstOpen: true,
-    quoteItem: null,
-    quoteQty: null,
-    quoteContact: null,
-    awaitingContact: false,
-    history: [] // { from: 'bot'|'user', text, cards, quickReplies }
+    // 詢價流程專屬的獨立狀態機，與 Knowledge Engine 完全分離
+    quote: {
+      active: false,
+      step: null, // 'item' | 'qty' | 'contact' | null
+      item: null,
+      qty: null,
+      contact: null
+    }
   };
 
   // ---------- SVG Icons（沿用官網不使用外部圖示庫的作法） ----------
@@ -70,7 +90,7 @@
       '    <input class="ac-input" id="acInput" type="text" placeholder="輸入您的問題...（例如：彌月禮盒推薦）" maxlength="200" />' +
       '    <button class="ac-send" id="acSend" aria-label="送出">' + ICONS.send + "</button>" +
       "  </div>" +
-      '  <div class="ac-disclaimer">內容由 AI 模擬客服提供，僅供參考，正式報價以專屬服務員回覆為準</div>' +
+      '  <div class="ac-disclaimer">內容由 AI 客服提供，僅供參考，正式報價以專屬服務員回覆為準</div>' +
       "</div>";
 
     document.body.appendChild(root);
@@ -90,7 +110,7 @@
       if (e.key === "Enter") handleUserSubmit();
     });
 
-    // 首次載入 3 秒後顯示提示泡泡，8 秒後自動淡出
+    // 首次載入 3 秒後顯示提示泡泡，11 秒後自動淡出
     setTimeout(function () {
       if (!state.opened) tooltip.classList.add("show");
     }, 3000);
@@ -111,7 +131,7 @@
 
     if (state.firstOpen) {
       state.firstOpen = false;
-      renderBotMessage(window.MockAI.getGreeting());
+      renderMenu();
     }
     setTimeout(function () {
       input.focus();
@@ -147,8 +167,12 @@
     return row;
   }
 
+  /**
+   * 渲染一則機器人訊息（文字＋可選的快速回覆按鈕／商品卡片／查看更多連結）
+   * @param {{text:string, quickReplies?:Array<{label:string,payload:string}>, cards?:Array, moreUrl?:(string|null)}} msg
+   * @returns {void}
+   */
   function renderBotMessage(msg) {
-    // msg: { text, quickReplies, cards, moreUrl }
     const row = document.createElement("div");
     row.className = "ac-row bot";
 
@@ -158,7 +182,7 @@
     row.appendChild(bubble);
     body.appendChild(row);
 
-    // 商品/方案卡片
+    // 商品/方案卡片（目前僅預留渲染能力，內容一律來自呼叫端傳入的資料，不在此處寫死）
     if (msg.cards && msg.cards.length) {
       msg.cards.forEach(function (card) {
         const cardRow = document.createElement("div");
@@ -209,48 +233,234 @@
     }
 
     scrollToBottom();
-    state.history.push({ from: "bot", text: msg.text });
   }
 
-  // ---------- 使用者互動 ----------
-  function onQuickReply(label, payload) {
-    renderUserMessage(label);
-    state.history.push({ from: "user", text: label });
+  // =========================================================
+  //  主選單 ／ FAQ 選單（純 UI 導覽，按鈕文字非知識內容）
+  // =========================================================
 
-    // 特殊連結類 payload：模擬開新分頁
-    if (payload === "link:survey") {
-      window.open("https://www.surveycake.com/s/xOYP9", "_blank", "noopener");
-    } else if (payload === "link:line") {
-      window.open("https://line.me/R/ti/p/@570brfxc/", "_blank", "noopener");
-    }
-
-    simulateThinking(function () {
-      sendToAI({ type: "payload", value: payload, label: label })
-        .then(function (reply) {
-          renderBotMessage(reply);
-        })
-        .catch(function (err) {
-          console.error("[AIConcierge] 訊息處理發生未預期錯誤：", err);
-          renderBotMessage({ text: "不好意思，系統暫時無法回應，請稍後再試。", quickReplies: [], cards: [] });
-        });
+  /**
+   * 顯示主選單。所有選項點擊後都會導向 Knowledge Engine 搜尋，
+   * 「線上詢價」則導向獨立的詢價流程，皆不寫死任何商品/FAQ/ESG 內容。
+   * @returns {void}
+   */
+  function renderMenu() {
+    renderBotMessage({
+      text: "您好，我是幸福+工場的 AI 採購顧問 ✨\n很高興為您服務！請問今天想了解：",
+      quickReplies: [
+        { label: "💍 婚禮喜餅", payload: "kb:婚禮喜餅" },
+        { label: "👶 彌月禮盒", payload: "kb:彌月禮盒" },
+        { label: "🏢 企業採購", payload: "kb:企業採購" },
+        { label: "🌱 ESG 說明", payload: "kb:ESG" },
+        { label: "❓ 常見問題", payload: "menu:faq" },
+        { label: "💬 線上詢價", payload: "quote:start" }
+      ]
     });
   }
 
+  /**
+   * 顯示 FAQ 選單。問題清單「即時」從 knowledgeEngine 已載入的
+   * knowledge.json 資料中篩選 type === "FAQ" 動態產生，
+   * 不在程式碼中寫死任何一題 FAQ。
+   * @returns {Promise<void>}
+   */
+  async function renderFaqMenu() {
+    try {
+      if (!window.knowledgeEngine || typeof window.knowledgeEngine.init !== "function") {
+        throw new Error("window.knowledgeEngine 尚未就緒");
+      }
+      await window.knowledgeEngine.init();
+
+      const faqEntries = (window.knowledgeEngine.data || []).filter(function (entry) {
+        return entry && entry.type === "FAQ" && typeof entry.title === "string";
+      });
+
+      if (!faqEntries.length) {
+        renderBotMessage({
+          text: NOT_FOUND_TEXT,
+          quickReplies: [{ label: "🔙 返回主選單", payload: "menu:main" }]
+        });
+        return;
+      }
+
+      const quickReplies = faqEntries.map(function (entry) {
+        return { label: entry.title, payload: "kb:" + entry.title };
+      });
+      quickReplies.push({ label: "🔙 返回主選單", payload: "menu:main" });
+
+      renderBotMessage({
+        text: "常見問題，請點選您想了解的項目：",
+        quickReplies: quickReplies
+      });
+    } catch (err) {
+      console.warn("[AIConcierge] 載入 FAQ 選單失敗：", err);
+      renderBotMessage({
+        text: NOT_FOUND_TEXT,
+        quickReplies: [{ label: "🔙 返回主選單", payload: "menu:main" }]
+      });
+    }
+  }
+
+  // =========================================================
+  //  詢價流程（獨立狀態機，與 Knowledge Engine 完全分離）
+  // ---------------------------------------------------------
+  //  Quick Reply → 詢價流程狀態機 → 完成摘要
+  //  不經過 sendToAI()，也不查詢 knowledge.json。
+  // =========================================================
+
+  /**
+   * 處理詢價流程中「點擊快速選項」的各個步驟。
+   * @param {string} payload - 以 "quote:" 開頭的 payload
+   * @returns {void}
+   */
+  function handleQuoteStep(payload) {
+    if (payload === "quote:start") {
+      state.quote = { active: true, step: "item", item: null, qty: null, contact: null };
+      renderBotMessage({
+        text: "好的，我來協助您進行線上詢價 📝\n請問想詢問的品項類別是？",
+        quickReplies: [
+          { label: "💍 婚禮喜餅", payload: "quote:item:婚禮喜餅" },
+          { label: "👶 彌月禮盒", payload: "quote:item:彌月禮盒" },
+          { label: "🏢 企業採購", payload: "quote:item:企業採購" },
+          { label: "🔙 返回主選單", payload: "menu:main" }
+        ]
+      });
+      return;
+    }
+
+    if (payload.indexOf("quote:item:") === 0) {
+      state.quote.item = payload.slice("quote:item:".length);
+      state.quote.step = "qty";
+      renderBotMessage({
+        text: "了解，「" + state.quote.item + "」大約需要多少數量呢？（可先概估）",
+        quickReplies: [
+          { label: "30 盒以下", payload: "quote:qty:30盒以下" },
+          { label: "30～100 盒", payload: "quote:qty:30~100盒" },
+          { label: "100 盒以上", payload: "quote:qty:100盒以上" }
+        ]
+      });
+      return;
+    }
+
+    if (payload.indexOf("quote:qty:") === 0) {
+      state.quote.qty = payload.slice("quote:qty:".length);
+      state.quote.step = "contact";
+      renderBotMessage({
+        text:
+          "最後，麻煩留下您方便聯繫的方式（電話或 LINE ID／Email 皆可），" +
+          "我們的專屬服務員將盡快與您確認明細與正式報價 🙏\n\n（直接在下方輸入框打字送出即可）"
+      });
+      return;
+    }
+  }
+
+  /**
+   * 使用者輸入聯絡方式後，完成詢價流程並顯示摘要。
+   * @returns {void}
+   */
+  function finishQuoteFlow() {
+    const q = state.quote;
+    renderBotMessage({
+      text:
+        "感謝您的詢問！以下為本次諮詢摘要：\n\n・品項：" +
+        (q.item || "未指定") +
+        "\n・預估數量：" +
+        (q.qty || "未指定") +
+        "\n・聯絡方式：" +
+        (q.contact || "未提供") +
+        "\n\n我們的專屬服務員將於 1–2 個工作日內主動與您聯繫。若希望更快收到回覆，也歡迎直接填寫官方洽詢單或加 LINE 好友喔！",
+      quickReplies: [
+        { label: "📋 前往官方洽詢單", payload: "link:survey" },
+        { label: "🔗 加 LINE 好友", payload: "link:line" },
+        { label: "🔙 返回主選單", payload: "menu:main" }
+      ]
+    });
+    state.quote = { active: false, step: null, item: null, qty: null, contact: null };
+  }
+
+  // ---------- 使用者互動 ----------
+
+  /**
+   * 快速回覆按鈕點擊的統一路由。
+   * 依 payload 前綴分派到：選單導覽 / 外部連結 / 詢價流程 / Knowledge Engine 查詢。
+   * @param {string} label - 按鈕顯示文字
+   * @param {string} payload - 按鈕對應的 payload
+   * @returns {void}
+   */
+  function onQuickReply(label, payload) {
+    renderUserMessage(label);
+
+    // 選單導覽（純 UI 導覽，不查詢知識庫）
+    if (payload === "menu:main") {
+      renderMenu();
+      return;
+    }
+    if (payload === "menu:faq") {
+      renderFaqMenu();
+      return;
+    }
+
+    // 外部連結（開新分頁，非知識內容）
+    if (payload === "link:survey") {
+      window.open(LINKS.survey, "_blank", "noopener");
+      renderBotMessage({ text: "已為您開啟官方洽詢單頁面，若視窗未自動開啟，也可點擊下方按鈕重新開啟。" });
+      return;
+    }
+    if (payload === "link:line") {
+      window.open(LINKS.line, "_blank", "noopener");
+      renderBotMessage({ text: "已為您開啟官方 LINE 頁面，若視窗未自動開啟，也可點擊下方按鈕重新開啟。" });
+      return;
+    }
+
+    // 詢價流程（獨立狀態機，不經過 Knowledge Engine）
+    if (payload.indexOf("quote:") === 0) {
+      handleQuoteStep(payload);
+      return;
+    }
+
+    // 知識查詢（唯一會呼叫 sendToAI() 的 quick reply 類型）
+    if (payload.indexOf("kb:") === 0) {
+      const query = payload.slice("kb:".length);
+      simulateThinking(function () {
+        sendToAI(query)
+          .then(renderBotMessage)
+          .catch(function (err) {
+            console.warn("[AIConcierge] 訊息處理發生未預期錯誤：", err);
+            renderBotMessage({ text: NOT_FOUND_TEXT, quickReplies: [{ label: "🔙 返回主選單", payload: "menu:main" }] });
+          });
+      });
+      return;
+    }
+
+    // 未知 payload：安全回退到主選單
+    renderMenu();
+  }
+
+  /**
+   * 使用者於輸入框打字送出訊息。
+   * 若目前正處於詢價流程的「聯絡方式」步驟，優先當作聯絡資訊處理；
+   * 否則一律送進 sendToAI()（Knowledge Engine）搜尋。
+   * @returns {void}
+   */
   function handleUserSubmit() {
     const text = input.value.trim();
     if (!text) return;
     input.value = "";
     renderUserMessage(text);
-    state.history.push({ from: "user", text: text });
+
+    // 詢價流程進行中，且正在等待聯絡方式
+    if (state.quote.active && state.quote.step === "contact") {
+      state.quote.contact = text;
+      finishQuoteFlow();
+      return;
+    }
 
     simulateThinking(function () {
-      sendToAI({ type: "text", value: text })
-        .then(function (reply) {
-          renderBotMessage(reply);
-        })
+      sendToAI(text)
+        .then(renderBotMessage)
         .catch(function (err) {
-          console.error("[AIConcierge] 訊息處理發生未預期錯誤：", err);
-          renderBotMessage({ text: "不好意思，系統暫時無法回應，請稍後再試。", quickReplies: [], cards: [] });
+          console.warn("[AIConcierge] 訊息處理發生未預期錯誤：", err);
+          renderBotMessage({ text: NOT_FOUND_TEXT, quickReplies: [{ label: "🔙 返回主選單", payload: "menu:main" }] });
         });
     });
   }
@@ -267,69 +477,25 @@
   }
 
   // =========================================================
-  //  sendToAI()  —— 統一的訊息處理入口（Mock ↔ AI Service）
+  //  sendToAI()  —— 唯一知識來源：Knowledge Engine
   // ---------------------------------------------------------
-  //  輸入 { type: 'text'|'payload', value: string, label?: string }
-  //  輸出 Promise<{ text: string, quickReplies?: [...], cards?: [...] }>
+  //  輸入：使用者查詢文字（string）
+  //  輸出：Promise<{ text, quickReplies, cards, moreUrl }>
   //
-  //  · window.USE_MOCK === true（預設）
-  //      直接使用 mock-ai.js 的假資料對話樹（window.MockAI.respond）
-  //  · window.USE_MOCK === false
-  //      改用 window.aiService.sendMessage() 取得回覆，並將回傳格式
-  //      轉換成 ai-chat.js 渲染邏輯需要的 { text, quickReplies, cards } 結構
-  //  · 任何情況下 aiService 呼叫失敗（尚未載入／future API 錯誤等），
-  //      一律 catch 起來並自動 fallback 回 mock-ai.js，
-  //      確保聊天室不會整個無法使用
-  //
-  //  未來要正式串接 OpenAI／Claude API：
-  //    不需要更動這支函式，只需要修改 /js/ai/ai-service.js 內的
-  //    callAI()，把 Mock 回覆換成真正的 fetch() API 呼叫即可。
+  //  流程：使用者輸入 → Knowledge Engine → 回答
+  //  沒有 Mock fallback，也不會呼叫 aiService／OpenAI。
+  //  找不到資料時，回傳固定訊息，並附上「返回主選單」按鈕。
   // =========================================================
-  async function sendToAI(input) {
-    // 1) 使用者自由輸入文字 → 優先交給 Knowledge Engine（不呼叫任何 AI）
-    if (input.type === "text" && window.USE_KNOWLEDGE_ENGINE) {
-      return getKnowledgeReply(input.value);
+  async function sendToAI(query) {
+    // 全域關閉開關：停用時直接回覆固定訊息，不查詢 knowledge.json
+    if (window.USE_KNOWLEDGE_ENGINE === false) {
+      return {
+        text: NOT_FOUND_TEXT,
+        quickReplies: [{ label: "🔙 返回主選單", payload: "menu:main" }],
+        cards: [],
+        moreUrl: null
+      };
     }
-
-    // 2) 其餘情況：維持原本 Mock ↔ AI Service 的流程
-    if (window.USE_MOCK) {
-      return getMockReply(input);
-    }
-
-    try {
-      if (!window.aiService || typeof window.aiService.sendMessage !== "function") {
-        throw new Error("window.aiService 尚未就緒，請確認 /js/ai/ 相關檔案已於 ai-chat.js 之前載入");
-      }
-
-      // quick reply 的 payload（如 flow:gift）對 aiService 而言沒有意義，
-      // 一律改用使用者實際看到、點擊的文字（label）作為訊息內容
-      const messageForAI = input.type === "payload" ? input.label || input.value : input.value;
-
-      const result = await window.aiService.sendMessage(messageForAI);
-
-      if (!result || result.success !== true) {
-        throw new Error("aiService 回傳失敗結果，自動切回 Mock 模式");
-      }
-
-      return adaptAIServiceResponse(result);
-    } catch (err) {
-      console.warn("[AIConcierge] aiService 呼叫失敗，自動切回 mock-ai.js：", err);
-      return getMockReply(input);
-    }
-  }
-
-  /**
-   * 呼叫 Knowledge Engine 搜尋 knowledge.json 取得回覆。
-   * 找到資料：回傳該筆 content，若有 url 則一併附上（供「查看更多」按鈕使用）。
-   * 找不到資料：回傳固定的「找不到相關資訊」訊息。
-   * 這兩種情況全程都不會呼叫任何 AI／OpenAI。
-   * 僅在 Knowledge Engine 本身發生非預期錯誤（例如尚未載入）時，
-   * 才 catch 起來改用同樣固定的訊息，確保聊天室不會中斷。
-   * @param {string} query - 使用者輸入的文字
-   * @returns {Promise<{text:string, quickReplies:Array, cards:Array, moreUrl:(string|null)}>}
-   */
-  async function getKnowledgeReply(query) {
-    const FALLBACK_TEXT = "很抱歉，目前我沒有找到相關資訊。若您需要進一步協助，歡迎聯絡我們。";
 
     try {
       if (!window.knowledgeEngine || typeof window.knowledgeEngine.answer !== "function") {
@@ -339,64 +505,36 @@
       return adaptKnowledgeResponse(result);
     } catch (err) {
       console.warn("[AIConcierge] Knowledge Engine 查詢發生錯誤，改用固定回覆：", err);
-      return { text: FALLBACK_TEXT, quickReplies: [], cards: [], moreUrl: null };
+      return {
+        text: NOT_FOUND_TEXT,
+        quickReplies: [{ label: "🔙 返回主選單", payload: "menu:main" }],
+        cards: [],
+        moreUrl: null
+      };
     }
   }
 
   /**
    * 將 window.knowledgeEngine.answer() 的回傳格式
    * { found, title, content, url }
-   * 轉換成 ai-chat.js 渲染邏輯所需的 { text, quickReplies, cards, moreUrl } 結構。
+   * 轉換成 renderBotMessage() 所需的 { text, quickReplies, cards, moreUrl } 結構。
+   * 一律附上「返回主選單」按鈕，方便使用者繼續瀏覽。
    * @param {{found:boolean, content:string, url:(string|null)}} result - Knowledge Engine 回傳結果
    * @returns {{text:string, quickReplies:Array, cards:Array, moreUrl:(string|null)}}
    */
   function adaptKnowledgeResponse(result) {
     return {
       text: result.content,
-      quickReplies: [],
+      quickReplies: [{ label: "🔙 返回主選單", payload: "menu:main" }],
       cards: [],
       moreUrl: result.found && result.url ? result.url : null
     };
   }
 
-  /**
-   * 呼叫 mock-ai.js 取得假資料回覆（維持原本的對話樹行為）
-   * @param {{type:string, value:string}} input - 使用者輸入
-   * @returns {{text:string, quickReplies:Array, cards:Array}}
-   */
-  function getMockReply(input) {
-    return window.MockAI.respond(input, state);
-  }
-
-  /**
-   * 將 window.aiService.sendMessage() 回傳的統一格式
-   * { success, reply, products, quickReply, form, context }
-   * 轉換成 ai-chat.js 渲染邏輯所需的 { text, quickReplies, cards } 結構，
-   * 讓畫面呈現方式完全不受影響。
-   * @param {{reply:string, products:Array, quickReply:Array}} result - aiService 回傳結果
-   * @returns {{text:string, quickReplies:Array, cards:Array}}
-   */
-  function adaptAIServiceResponse(result) {
-    const quickReplies = Array.isArray(result.quickReply)
-      ? result.quickReply.map(function (qr) {
-          return { label: qr.title, payload: qr.value };
-        })
-      : [];
-
-    const cards = Array.isArray(result.products)
-      ? result.products.map(function (p) {
-          return { title: p.name, desc: p.description, price: p.price };
-        })
-      : [];
-
-    return { text: result.reply || "", quickReplies: quickReplies, cards: cards };
-  }
-
   // ---------- 初始化 ----------
   function init() {
-    if (!window.MockAI) {
-      console.warn("[AIConcierge] 找不到 MockAI，請確認 mock-ai.js 已於本檔案之前載入");
-      return;
+    if (!window.knowledgeEngine) {
+      console.warn("[AIConcierge] 找不到 window.knowledgeEngine，請確認 knowledge-engine.js 已於本檔案之前載入");
     }
     buildDOM();
   }
