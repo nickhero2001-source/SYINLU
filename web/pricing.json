@@ -1,0 +1,107 @@
+{
+  "updatedNote": "價格與折扣區間依 2025/7 版官方訂購單整理，僅供試算參考，正式報價以專屬服務員回覆為準。",
+  "freeShippingThreshold": 8000,
+  "discountGroups": {
+    "A": {
+      "label": "幸福花磚（雙/三層）、星空不來梅（雙層）、美好時光（雙層）",
+      "tiers": [
+        { "min": 30, "max": 49, "rate": 0.95 },
+        { "min": 50, "max": 69, "rate": 0.92 },
+        { "min": 70, "max": 99, "rate": 0.9 },
+        { "min": 100, "max": 149, "rate": 0.88 },
+        { "min": 150, "max": null, "rate": 0.85 }
+      ]
+    },
+    "B": {
+      "label": "精采世界、美好夢想、Happy Together",
+      "tiers": [
+        { "min": 30, "max": 69, "rate": 0.95 },
+        { "min": 70, "max": 99, "rate": 0.92 },
+        { "min": 100, "max": 149, "rate": 0.9 },
+        { "min": 150, "max": 199, "rate": 0.88 },
+        { "min": 200, "max": null, "rate": 0.85 }
+      ]
+    },
+    "C": {
+      "label": "星空不來梅（單層）、一起幸福吧、小協奏、美好時光（單層）、美好夢想S、愛麗絲夢遊仙境、蛋捲鐵盒／分享包",
+      "tiers": [
+        { "min": 30, "max": 99, "rate": 0.95 },
+        { "min": 100, "max": 149, "rate": 0.92 },
+        { "min": 150, "max": 199, "rate": 0.9 },
+        { "min": 200, "max": 299, "rate": 0.88 },
+        { "min": 300, "max": null, "rate": 0.85 }
+      ]
+    }
+  },
+  "products": [
+    { "id": "bulaimei-1-tea", "series": "星空不來梅（單層）", "variant": "吃茶款", "unitPrice": 420, "discountGroup": "C" },
+    { "id": "bulaimei-1-mix", "series": "星空不來梅（單層）", "variant": "綜果款", "unitPrice": 420, "discountGroup": "C" },
+    { "id": "bulaimei-2-tea", "series": "星空不來梅（雙層）", "variant": "雙層吃茶款", "unitPrice": 820, "discountGroup": "A" },
+    { "id": "bulaimei-2-mix", "series": "星空不來梅（雙層）", "variant": "雙層綜果款", "unitPrice": 820, "discountGroup": "A" },
+
+    { "id": "meihaoshiguang-2a", "series": "美好時光（雙層）", "variant": "雙層綜合A款", "unitPrice": 699, "discountGroup": "A" },
+    { "id": "meihaoshiguang-2b", "series": "美好時光（雙層）", "variant": "雙層綜合B款（12支蛋捲）", "unitPrice": 830, "discountGroup": "A" },
+    { "id": "meihaoshiguang-1-cookie", "series": "美好時光（單層）", "variant": "單層提盒餅乾蛋捲", "unitPrice": 399, "discountGroup": "C" },
+    { "id": "meihaoshiguang-1-roll", "series": "美好時光（單層）", "variant": "單層提盒蛋捲款", "unitPrice": 399, "discountGroup": "C" },
+
+    { "id": "xiaoxiezou-cookie", "series": "小協奏禮盒", "variant": "餅乾款", "unitPrice": 350, "discountGroup": "C" },
+    { "id": "xiaoxiezou-cookieroll", "series": "小協奏禮盒", "variant": "餅乾蛋捲款", "unitPrice": 360, "discountGroup": "C" },
+
+    { "id": "xingfuhuazhuan-2mix", "series": "幸福花磚", "variant": "綜合款雙層", "unitPrice": 699, "discountGroup": "A" },
+    { "id": "xingfuhuazhuan-2cookie", "series": "幸福花磚", "variant": "餅乾款雙層", "unitPrice": 699, "discountGroup": "A" },
+    { "id": "xingfuhuazhuan-3", "series": "幸福花磚", "variant": "綜合款三層", "unitPrice": 940, "discountGroup": "A" },
+
+    { "id": "happytogether-roll", "series": "Happy Together", "variant": "蛋捲餅乾款", "unitPrice": 600, "discountGroup": "B" },
+    { "id": "happytogether-mix", "series": "Happy Together", "variant": "綜合款", "unitPrice": 599, "discountGroup": "B" },
+    { "id": "happytogether-pineapple", "series": "Happy Together", "variant": "8入土鳳梨酥", "unitPrice": 590, "discountGroup": "B" },
+
+    { "id": "yiqixingfuba", "series": "一起幸福吧（麵包樹聯名）", "variant": "餅乾蛋捲提盒", "unitPrice": 420, "discountGroup": "C" },
+
+    { "id": "meihaomengxiang-a", "series": "美好夢想", "variant": "A款（餅鳳款）", "unitPrice": 560, "discountGroup": "B" },
+    { "id": "meihaomengxiang-b", "series": "美好夢想", "variant": "B款（綜合款）", "unitPrice": 590, "discountGroup": "B" },
+    { "id": "meihaomengxiang-c", "series": "美好夢想", "variant": "C款（餅蛋款）", "unitPrice": 630, "discountGroup": "B" },
+    { "id": "meihaomengxiangs", "series": "美好夢想S", "variant": "餅乾蛋捲組", "unitPrice": 450, "discountGroup": "C" },
+
+    { "id": "jingcaishijie", "series": "Wonderful World 精采世界", "variant": "長蛋捲24支", "unitPrice": 600, "discountGroup": "B" },
+
+    { "id": "alice-roll", "series": "愛麗絲夢遊仙境", "variant": "蛋捲組", "unitPrice": 400, "discountGroup": "C" },
+    { "id": "alice-rollcookie", "series": "愛麗絲夢遊仙境", "variant": "蛋捲餅乾組", "unitPrice": 450, "discountGroup": "C" },
+
+    { "id": "dancetin-classic4", "series": "星空．幸福+蛋捲鐵盒", "variant": "芝麻／原味／香蕉／紅藜口味", "unitPrice": 470, "discountGroup": "C" },
+    { "id": "dancetin-special", "series": "星空．幸福+蛋捲鐵盒", "variant": "抹茶／紅茶／咖啡／巧克力／綜合口味", "unitPrice": 500, "discountGroup": "C" },
+    { "id": "danfamily-same", "series": "幸福+蛋捲．家庭分享包", "variant": "同系列雙口味（芝麻+原味／紅藜／香蕉）", "unitPrice": 630, "discountGroup": "C" },
+    { "id": "danfamily-cross", "series": "幸福+蛋捲．家庭分享包", "variant": "跨系列雙口味（芝麻+抹茶／紅茶／巧克力／咖啡）", "unitPrice": 660, "discountGroup": "C" },
+
+    { "id": "yumthe-cookie", "series": "Yumthé 花獻禮盒", "variant": "餅乾款", "unitPrice": 890, "pricing": "yumthe-cookie" },
+    { "id": "yumthe-cookieroll", "series": "Yumthé 花獻禮盒", "variant": "餅乾蛋捲款", "unitPrice": 890, "pricing": "yumthe-cookieroll" }
+  ],
+  "yumtheTiers": {
+    "yumthe-cookie": [
+      { "min": 1, "max": 15, "price": 890 },
+      { "min": 16, "max": 29, "price": 755 },
+      { "min": 30, "max": 49, "price": 669 },
+      { "min": 50, "max": 69, "price": 569 },
+      { "min": 70, "max": null, "price": 509 }
+    ],
+    "yumthe-cookieroll": [
+      { "min": 1, "max": 15, "price": 890 },
+      { "min": 16, "max": 29, "price": 785 },
+      { "min": 30, "max": 49, "price": 699 },
+      { "min": 50, "max": 69, "price": 599 },
+      { "min": 70, "max": null, "price": 539 }
+    ]
+  },
+  "addon": {
+    "id": "hanbing",
+    "label": "核你同頻綠 · 中式漢餅（喜餅加購，不單獨販售）",
+    "unitPrice": 368,
+    "minQty": 12,
+    "note": "與主禮盒同享折扣（依主禮盒所屬折扣組別計算；搭配 Yumthé 花獻禮盒訂購者，漢餅另有獨立折扣區間）"
+  },
+  "addonYumtheTiers": [
+    { "min": 12, "max": 29, "rate": 0.95 },
+    { "min": 30, "max": 49, "rate": 0.92 },
+    { "min": 50, "max": 69, "rate": 0.9 },
+    { "min": 70, "max": null, "rate": 0.88 }
+  ]
+}

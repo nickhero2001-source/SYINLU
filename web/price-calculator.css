@@ -1,0 +1,206 @@
+/* =========================================================
+   幸福+工場 · 禮盒金額試算區塊
+   -----------------------------------------------------------
+   沿用官網既有色票（--deep-rose / --gold / --cream 等）與
+   Noto Serif TC / Playfair Display 字體，風格與既有
+   .table-container / .section-wrap 一致，不引入新的視覺語彙。
+   ========================================================= */
+
+#price-calculator-root {
+  --pc-rose: var(--deep-rose, #c96878);
+  --pc-gold: var(--gold, #d4a843);
+  --pc-cream: var(--cream, #fdf6ef);
+  --pc-warm: var(--warm, #f9ede3);
+  --pc-text: var(--text, #2d2d2d);
+  --pc-text-mid: var(--text-mid, #4a4a4a);
+  --pc-text-lt: var(--text-lt, #a07f84);
+  --pc-white: #ffffff;
+  font-family: 'Noto Serif TC', serif;
+  max-width: 760px;
+  margin: 0 auto;
+}
+
+.pc-card {
+  background: var(--pc-white);
+  border: 1px solid rgba(212, 168, 67, 0.22);
+  border-radius: 18px;
+  box-shadow: 0 10px 32px rgba(60, 30, 35, 0.06);
+  padding: 32px 28px;
+}
+
+.pc-loading,
+.pc-error {
+  text-align: center;
+  color: var(--pc-text-lt);
+  font-size: 0.9rem;
+  padding: 20px;
+}
+
+.pc-field {
+  margin-bottom: 20px;
+}
+
+.pc-label {
+  display: block;
+  font-size: 0.85rem;
+  color: var(--pc-text-mid);
+  margin-bottom: 8px;
+  letter-spacing: 0.03em;
+}
+
+.pc-select,
+.pc-input {
+  width: 100%;
+  box-sizing: border-box;
+  border: 1.4px solid rgba(212, 168, 67, 0.32);
+  background: var(--pc-cream);
+  border-radius: 10px;
+  padding: 11px 14px;
+  font-size: 0.92rem;
+  font-family: 'Noto Serif TC', serif;
+  color: var(--pc-text);
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.pc-select:focus,
+.pc-input:focus {
+  border-color: var(--pc-gold);
+}
+
+.pc-row {
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+.pc-row > .pc-field {
+  flex: 1;
+  min-width: 200px;
+}
+
+.pc-addon {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 14px 16px;
+  background: var(--pc-warm);
+  border-radius: 12px;
+  margin-bottom: 20px;
+}
+.pc-addon input[type="checkbox"] {
+  margin-top: 4px;
+  accent-color: var(--pc-rose);
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+}
+.pc-addon-text {
+  font-size: 0.82rem;
+  color: var(--pc-text-mid);
+  line-height: 1.6;
+}
+.pc-addon-qty {
+  margin-top: 10px;
+  max-width: 160px;
+  display: none;
+}
+.pc-addon-qty.show {
+  display: block;
+}
+
+.pc-result {
+  border-top: 1px dashed rgba(212, 168, 67, 0.4);
+  padding-top: 22px;
+  margin-top: 6px;
+}
+
+.pc-result-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  font-size: 0.86rem;
+  color: var(--pc-text-mid);
+  padding: 6px 0;
+}
+.pc-result-row .pc-val {
+  color: var(--pc-text);
+  font-weight: 500;
+}
+.pc-result-row.pc-discount .pc-val {
+  color: var(--pc-gold);
+  font-weight: 600;
+}
+
+.pc-total-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-top: 12px;
+  padding-top: 14px;
+  border-top: 1.5px solid rgba(201, 104, 120, 0.25);
+}
+.pc-total-label {
+  font-size: 0.95rem;
+  color: var(--pc-text);
+  letter-spacing: 0.03em;
+}
+.pc-total-value {
+  font-family: 'Playfair Display', serif;
+  font-style: italic;
+  font-size: 1.7rem;
+  color: var(--pc-rose);
+}
+
+.pc-shipping-note {
+  margin-top: 14px;
+  font-size: 0.78rem;
+  padding: 10px 14px;
+  border-radius: 10px;
+  background: rgba(127, 191, 160, 0.14);
+  color: var(--pc-text-mid);
+}
+.pc-shipping-note.pc-not-free {
+  background: rgba(212, 168, 67, 0.14);
+}
+
+.pc-disclaimer {
+  margin-top: 18px;
+  font-size: 0.7rem;
+  color: var(--pc-text-lt);
+  line-height: 1.7;
+  text-align: center;
+}
+
+.pc-cta {
+  margin-top: 20px;
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.pc-cta-btn {
+  display: inline-block;
+  text-decoration: none;
+  font-size: 0.82rem;
+  padding: 10px 22px;
+  border-radius: 30px;
+  border: 1.4px solid var(--pc-gold);
+  color: var(--pc-rose);
+  background: transparent;
+  transition: all 0.25s;
+  cursor: pointer;
+  font-family: 'Noto Serif TC', serif;
+}
+.pc-cta-btn:hover {
+  background: var(--pc-gold);
+  color: #fff;
+}
+
+@media (max-width: 560px) {
+  #price-calculator-root .pc-card {
+    padding: 24px 18px;
+  }
+  .pc-total-value {
+    font-size: 1.4rem;
+  }
+}
