@@ -25,6 +25,9 @@
 <!-- AI 採購顧問（AI Concierge）樣式表，獨立檔案，不影響既有版型 -->
 <link rel="stylesheet" href="/ai-chat.css">
 
+<!-- 禮盒金額試算樣式表，獨立檔案，不影響既有版型 -->
+<link rel="stylesheet" href="/price-calculator.css">
+
 <style>
 /* 加在最前面，作為全網頁的基礎設定 */
     html {
@@ -2424,6 +2427,18 @@ src="https://i.ibb.co/G4FCYv4m/image.jpg" alt="image" border="0" /></a>" alt="�
   </div>
 </section>
 
+<!-- 禮盒金額試算 -->
+<section id="calculator" style="background:var(--warm)">
+  <div class="section-wrap">
+    <div class="reveal">
+      <div class="section-eyebrow">Price Estimator</div>
+      <h2 class="section-title">禮盒<em>金額試算</em></h2>
+      <p class="section-desc">選擇禮盒款式與訂購數量，立即試算批量折扣後的預估金額。</p>
+    </div>
+    <div id="price-calculator-root" class="reveal"></div>
+  </div>
+</section>
+
 <!-- Loyalty -->
 <section id="loyalty">
   <div class="section-wrap">
@@ -3087,5 +3102,8 @@ reveals.forEach(el => obs.observe(el));
 <!-- Knowledge Engine：讀取 knowledge.json，是目前聊天室唯一的知識來源，不呼叫任何 AI；需在 ai-chat.js 之前載入 -->
 <script src="/js/ai/knowledge-engine.js"></script>
 <script src="/ai-chat.js"></script>
+
+<!-- 禮盒金額試算——獨立模組，僅在頁面上有 #price-calculator-root 掛載點時執行 -->
+<script src="/price-calculator.js"></script>
 </body>
 </html>
